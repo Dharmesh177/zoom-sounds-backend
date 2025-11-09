@@ -95,7 +95,48 @@ const generateOrFetchProductQr = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const verifyProductQr = catchAsyncError(async (req, res, next) => {
+  const { productId } = req.params;
+
+  //Check product in MongoDB
+  const product = await productModel.findById(productId);
+  if (!product) return next(new AppError("Invalid or fake product!", 404));
+
+  //Optional: Check QR file exists in S3
+  const fileKey = `qrcodes/${productId}.png`;
+  let qrExists = false;
+
+  try {
+    qrExists = await checkS3FileExists(fileKey);
+  } catch (err) {
+    console.warn("S3 check failed:", err.message);
+  }
+
+  if (!qrExists) {
+    console.warn(`QR missing in S3 for productId ${productId}`);
+  }
+
+  //Return verification result
+  res.status(200).json({
+    verified: true,
+    message: qrExists
+      ? "This is a genuine Zoom Sounds product ✅"
+      : "Product verified but QR not found in cloud (report if suspicious).",
+    product: {
+      id: product._id,
+      title: product.title,
+      description: product.descripton,
+      brand: product.brand,
+      category: product.category,
+      imgCover: product.imgCover,
+      verifiedAt: new Date(),
+    },
+    qrValidated: qrExists,
+  });
+});
+
 const deleteProduct = deleteOne(productModel, "Product");
+
 export {
   addProduct,
   getAllProducts,
@@ -103,4 +144,5 @@ export {
   updateProduct,
   deleteProduct,
   generateOrFetchProductQr,
+  verifyProductQr,
 };
