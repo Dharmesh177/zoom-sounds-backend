@@ -7,7 +7,7 @@ import {
   getSpecificProductValidation,
   updateProductValidation,
 } from "./product.validation.js";
-import { generateOrFetchProductQr } from "./product.controller.js";
+import { generateOrFetchProductQr, verifyProductQr } from "./product.controller.js";
 import { uploadMultipleFiles } from "../../../multer/multer.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 
@@ -28,6 +28,8 @@ productRouter
     product.addProduct
   )
   .get(product.getAllProducts);
+
+productRouter.get("/verify/:productId", verifyProductQr);
 
 productRouter.get(
   "/:productId/qrcode",
