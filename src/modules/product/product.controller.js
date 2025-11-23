@@ -8,13 +8,12 @@ import { productModel } from "./../../../Database/models/product.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 
 const addProduct = catchAsyncError(async (req, res, next) => {
-  const allowed = ['title','price','description','category','stock','brand'];
-  const payload = allowed.reduce((o,k) => { if (k in req.body) o[k] = req.body[k]; return o; }, {});
+  const payload = { ...req.body };
 
-  if (!payload.title) return next(new AppError("Title is required", 400));
-  payload.slug = slugify(payload.title, { lower: true, strict: true });
+  if (!payload.name) return next(new AppError("Name is required", 400));
+  payload.slug = slugify(payload.name, { lower: true, strict: true });
 
-  if (req.files?.imgCover?.[0]) payload.imgCover = req.files.imgCover[0].filename;
+  if (req.files?.thumbnail?.[0]) payload.thumbnail = req.files.thumbnail[0].filename;
   if (req.files?.images) payload.images = req.files.images.map(f => f.filename);
 
   const newProduct = await productModel.create(payload);
@@ -47,8 +46,8 @@ const getSpecificProduct = catchAsyncError(async (req, res, next) => {
 
 const updateProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  if (req.body.title) {
-    req.body.slug = slugify(req.body.title);
+  if (req.body.name) {
+    req.body.slug = slugify(req.body.name);
   }
   const updateProduct = await productModel.findByIdAndUpdate(id, req.body, {
     new: true,
@@ -124,11 +123,11 @@ const verifyProductQr = catchAsyncError(async (req, res, next) => {
       : "Product verified but QR not found in cloud (report if suspicious).",
     product: {
       id: product._id,
-      title: product.title,
-      description: product.descripton,
+      name: product.name,
+      description: product.description,
       brand: product.brand,
       category: product.category,
-      imgCover: product.imgCover,
+      thumbnail: product.thumbnail,
       verifiedAt: new Date(),
     },
     qrValidated: qrExists,
