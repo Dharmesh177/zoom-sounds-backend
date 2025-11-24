@@ -1,9 +1,12 @@
 import Joi from "joi";
+import { QUERY_TYPES } from "../../constants/common-constants.js";
 
 const addReviewValidation = Joi.object({
-  text: Joi.string().trim().required(),
-  productId: Joi.string().hex().length(24).required(),
-  rate: Joi.number().default(1),
+  name: Joi.string().trim().required(),
+  email: Joi.string().email().trim().required(),
+  phone: Joi.string().trim().allow(null, ""),
+  message: Joi.string().trim().required(),
+  type: Joi.string().valid(...QUERY_TYPES).default("other"),
 });
 
 const getSpecificReviewValidation = Joi.object({
@@ -12,8 +15,11 @@ const getSpecificReviewValidation = Joi.object({
 
 const updateReviewValidation = Joi.object({
   id: Joi.string().hex().length(24).required(),
-  text: Joi.string().trim(),
-  rate: Joi.number(),
+  name: Joi.string().trim(),
+  email: Joi.string().email().trim(),
+  phone: Joi.string().trim().allow(null, ""),
+  message: Joi.string().trim(),
+  type: Joi.string().valid(...QUERY_TYPES).default("other"),
 });
 
 const deleteReviewValidation = Joi.object({

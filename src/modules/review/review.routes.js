@@ -1,13 +1,12 @@
 import express from "express";
 import * as review from "./review.controller.js";
 import { validate } from "../../middlewares/validate.js";
-
+import { reviewPostLimiter } from "../../middlewares/rateLimiter.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 import {
   addReviewValidation,
   deleteReviewValidation,
   getSpecificReviewValidation,
-  updateReviewValidation,
 } from "./review.validation.js";
 
 const reviewRouter = express.Router();
@@ -15,21 +14,18 @@ const reviewRouter = express.Router();
 reviewRouter
   .route("/")
   .post(
-    protectedRoutes,
-    allowedTo("user"),
+    reviewPostLimiter,
     validate(addReviewValidation),
     review.addReview
   )
-  .get(review.getAllReviews);
+  .get(
+    protectedRoutes,
+    allowedTo("user", "admin"),
+    review.getAllReviews
+  ); 
 
 reviewRouter
   .route("/:id")
-  .put(
-    protectedRoutes,
-    allowedTo("user"),
-    validate(updateReviewValidation),
-    review.updateReview
-  )
   .get(validate(getSpecificReviewValidation), review.getSpecificReview)
   .delete(
     protectedRoutes,
