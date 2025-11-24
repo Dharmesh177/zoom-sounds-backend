@@ -33,7 +33,7 @@ const addProductValidation = Joi.object({
   warranty: Joi.string().trim(),
   tags: Joi.array().items(Joi.string()),
   ratingAvg: Joi.number().min(1).max(5),
-  price: Joi.number().min(0).required(),
+  price: Joi.number().min(0),
 });
 
 const getSpecificProductValidation = Joi.object({
