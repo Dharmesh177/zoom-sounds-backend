@@ -6,6 +6,7 @@ import { AppError } from "../../utils/AppError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { productModel } from "./../../../Database/models/product.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
+import mongoose from "mongoose";
 
 const addProduct = catchAsyncError(async (req, res, next) => {
   const payload = { ...req.body };
@@ -36,10 +37,15 @@ const getAllProducts = catchAsyncError(async (req, res, next) => {
 });
 const getSpecificProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
+
+  console.log(`Fetching product with ID: ${id}`); // Log the product ID
+
   if (!mongoose.Types.ObjectId.isValid(id))
     return next(new AppError("Invalid id format", 400));
 
   const product = await productModel.findById(id).lean();
+
+  console.log(`Fetched product: ${JSON.stringify(product)}`); // Log the fetched product
   if (!product) return next(new AppError("Product not found", 404));
   res.status(200).json({ status: "success", product });
 });
