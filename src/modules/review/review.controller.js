@@ -16,7 +16,6 @@ const addReview = catchAsyncError(async (req, res, next) => {
 
 const getAllReviews = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(queryModel.find(), req.query)
-    .pagination()
     .fields()
     .filteration()
     .search()
