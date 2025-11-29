@@ -2,66 +2,76 @@ export class ApiFeatures {
   constructor(mongooseQuery, queryString) {
     this.mongooseQuery = mongooseQuery;
     this.queryString = queryString;
-    this.page = 1;
-    this.limit = 10;
-    this.filters = {};
   }
 
-  // Pagination
+  //1-Pagination
   pagination() {
-    this.page = Number(this.queryString.page) || 1;
-    this.limit = Number(this.queryString.limit) || 10;
+    const PAGE_LIMIT = 3;
+    let PAGE_NUMBER = this.queryString.page * 1 || 1;
+    if (this.queryString.page <= 0) PAGE_NUMBER = 1;
+    const PAGE_SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT; //2*3
 
-    if (this.page <= 0) this.page = 1;
-
-    const skip = (this.page - 1) * this.limit;
-    this.mongooseQuery.skip(skip).limit(this.limit);
-
+    this.mongooseQuery.skip(PAGE_SKIP).limit(PAGE_LIMIT);
     return this;
   }
 
-  // Filteration
+  //2-Filteration
+
   filteration() {
     let filterObj = { ...this.queryString };
+    // console.log(filterObj);
 
-    const excludedQuery = ["page", "limit", "sort", "fields", "keyword"];
-    excludedQuery.forEach((ele) => delete filterObj[ele]);
+    let excludedQuery = ["page", "sort", "fields", "keyword"];
 
-    let filters = JSON.stringify(filterObj);
-    filters = filters.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
-    this.filters = JSON.parse(filters);
+    excludedQuery.forEach((ele) => {
+      delete filterObj[ele];
+    });
+    filterObj = JSON.stringify(filterObj);
+    // console.log(filterObj);
 
-    this.mongooseQuery.find(this.filters);
+    filterObj = filterObj.replace(
+      /\b(gt|gte|lt|lte)\b/g,
+      (match) => `$${match}`
+    );
+    filterObj = JSON.parse(filterObj);
+
+    this.mongooseQuery.find(filterObj);
     return this;
   }
-
-  // Sort
+  //3-Sort
   sort() {
     if (this.queryString.sort) {
-      const sortedBy = this.queryString.sort.split(",").join(" ");
+      // console.log(req.query.sort);
+      let sortedBy = this.queryString.sort.split(",").join(" ");
+      // console.log(sortedBy);
       this.mongooseQuery.sort(sortedBy);
     }
     return this;
   }
+  //4-Search
 
-  // Search
   search() {
     if (this.queryString.keyword) {
+      // console.log(this.queryString.keyword);
+
       this.mongooseQuery.find({
         $or: [
           { title: { $regex: this.queryString.keyword, $options: "i" } },
-          { description: { $regex: this.queryString.keyword, $options: "i" } },
+          { descripton: { $regex: this.queryString.keyword, $options: "i" } },
         ],
       });
     }
     return this;
   }
 
-  // Fields selection
+  //4-Fields
+
   fields() {
     if (this.queryString.fields) {
-      const fields = this.queryString.fields.split(",").join(" ");
-      this.mongooseQuery.select(fields);
+      // console.log(this.queryString.fields);
+      let fields = this.queryString.fields.split(",").join(" ");
+      console.log(fields);
+      // this.mongooseQuery.select(fields);
     }
     return this;
   }
