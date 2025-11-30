@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import QRCode from "qrcode";
 import { uploadToS3, checkS3FileExists } from "../../utils/s3.js";
 import slugify from "slugify";
@@ -6,21 +7,54 @@ import { AppError } from "../../utils/AppError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { productModel } from "./../../../Database/models/product.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
-import mongoose from "mongoose";
 
 const addProduct = catchAsyncError(async (req, res, next) => {
   const payload = { ...req.body };
-
+  console.log(payload);
   if (!payload.name) return next(new AppError("Name is required", 400));
   payload.slug = slugify(payload.name, { lower: true, strict: true });
 
-  if (req.files?.thumbnail?.[0]) payload.thumbnail = req.files.thumbnail[0].filename;
-  if (req.files?.images) payload.images = req.files.images.map(f => f.filename);
+  // Upload thumbnail to S3
+  if (req.files?.thumbnail?.[0]) {
+    const thumbFile = req.files.thumbnail[0];
+    const thumbUrl = await uploadToS3(
+      thumbFile.buffer,
+      `${payload.slug}-thumbnail.jpg`,
+      thumbFile.mimetype,
+      "Products"
+    );
+    payload.thumbnail = thumbUrl;
+  }
+
+  console.log(req.files)
+
+  // Upload images array to S3
+  if (req.files?.images) {
+    const uploadedImages = [];
+
+    for (const img of req.files.images) {
+      const imgUrl = await uploadToS3(
+        img.buffer,
+        `${payload.slug}-${img.originalname}`,
+        img.mimetype,
+        "Products"
+      );
+      uploadedImages.push(imgUrl);
+    }
+
+    payload.images = uploadedImages;
+  }
+  
+  console.log("final payload");
+  console.log(payload);
 
   const newProduct = await productModel.create(payload);
-  res.status(201).json({ status: "success", product: newProduct });
-});
 
+  res.status(201).json({
+    status: "success",
+    product: newProduct,
+  });
+});
 
 const getAllProducts = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(productModel.find(), req.query)

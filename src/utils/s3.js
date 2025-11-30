@@ -6,17 +6,16 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-export const uploadToS3 = async (buffer, fileName, mimeType) => {
+export const uploadToS3 = async (buffer, fileName, mimeType, folder = "Products") => {
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: `qrcodes/${fileName}`,
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `${folder}/${fileName}`,
     Body: buffer,
-    ContentType: mimeType,
-    ACL: "public-read", // public access for verification display
+    ContentType: mimeType
   };
 
   const data = await s3.upload(params).promise();
-  return data.Location; // returns public URL
+  return data.Location;
 };
 
 export const checkS3FileExists = async (key) => {

@@ -8,7 +8,7 @@ const productSchema = new Schema(
     category: { type: String, required: true },
     technology: { type: String, required: true },
     thumbnail: { type: String },
-    images: [String],
+    images: [{ type: String }],
     overview: { type: String },
     keyHighlights: [String],
     features: [String],
@@ -43,15 +43,6 @@ const productSchema = new Schema(
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
-
-productSchema.post("init", function (doc) {
-  if (doc.thumbnail && doc.images) {
-    doc.thumbnail = `${process.env.BASE_URL}products/${doc.thumbnail}`;
-    doc.images = doc.images.map((ele) => {
-      return `${process.env.BASE_URL}products/${ele}`;
-    });
-  }
-});
 
 export const productModel = model("product", productSchema);
 

@@ -8,7 +8,7 @@ import {
   updateProductValidation,
 } from "./product.validation.js";
 import { generateOrFetchProductQr, verifyProductQr } from "./product.controller.js";
-import { uploadMultipleFiles } from "../../../multer/multer.js";
+import { uploadMultipleFilesInMemory } from "../../middlewares/uploads.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 
 const productRouter = express.Router();
@@ -23,7 +23,7 @@ productRouter
   .post(
     protectedRoutes,
     allowedTo("admin", "user"),
-    uploadMultipleFiles(arrFields, "products"),
+    uploadMultipleFilesInMemory(arrFields),
     validate(addProductValidation),
     product.addProduct
   )
