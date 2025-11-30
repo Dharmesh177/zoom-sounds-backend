@@ -86,16 +86,78 @@ const getSpecificProduct = catchAsyncError(async (req, res, next) => {
 
 const updateProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  if (req.body.name) {
-    req.body.slug = slugify(req.body.name);
+
+  const existingProduct = await productModel.findById(id);
+  if (!existingProduct) return next(new AppError("Product was not found", 404));
+
+  const payload = { ...req.body };
+
+  // Update slug if name is changing
+  if (payload.name) {
+    payload.slug = slugify(payload.name, { lower: true, strict: true });
   }
-  const updateProduct = await productModel.findByIdAndUpdate(id, req.body, {
+
+  const slug = payload.slug || existingProduct.slug;
+
+  // --- THUMBNAIL UPLOAD (only if new) ---
+  if (req.files?.thumbnail?.[0]) {
+    const newThumb = req.files.thumbnail[0];
+
+    // Extract current filename from stored S3 URL
+    const currentThumbUrl = existingProduct.thumbnail || "";
+    const currentThumbName = currentThumbUrl.split("/").pop(); // e.g., slug-thumbnail.jpg
+
+    const newThumbName = `${slug}-thumbnail.jpg`;
+
+    if (currentThumbName !== newThumbName) {  // ← only upload if different
+      const thumbUrl = await uploadToS3(
+        newThumb.buffer,
+        newThumbName,
+        newThumb.mimetype,
+        "Products"
+      );
+      payload.thumbnail = thumbUrl;
+    } else {
+      payload.thumbnail = existingProduct.thumbnail; // keep old
+    }
+  }
+
+  // --- IMAGES UPLOAD (skip ones that already exist) ---
+  if (req.files?.images) {
+    const existingImages = existingProduct.images || [];
+    const existingImageNames = existingImages.map(url => url.split("/").pop()); // extract filenames
+
+    const uploadedImages = [];
+
+    for (const img of req.files.images) {
+      const newImageName = `${slug}-${img.originalname}`;
+
+      if (!existingImageNames.includes(newImageName)) { // ← upload only if NOT already present
+        const imgUrl = await uploadToS3(
+          img.buffer,
+          newImageName,
+          img.mimetype,
+          "Products"
+        );
+        uploadedImages.push(imgUrl);
+      }
+    }
+
+    // Merge old + new (without duplicates)
+    payload.images = [
+      ...existingImages,
+      ...uploadedImages
+    ].filter((v, i, a) => a.indexOf(v) === i);
+  }
+
+  const updatedProduct = await productModel.findByIdAndUpdate(id, payload, {
     new: true,
   });
 
-  updateProduct && res.status(201).json({ message: "success", updateProduct });
-
-  !updateProduct && next(new AppError("Product was not found", 404));
+  res.status(200).json({
+    status: "success",
+    product: updatedProduct,
+  });
 });
 
 
@@ -121,7 +183,7 @@ const generateOrFetchProductQr = catchAsyncError(async (req, res, next) => {
   }
 
   //If not exist → Generate new QR code
-  const verificationUrl = `https://zoomsounds.in/verify/${productId}`;
+  const verificationUrl = `https://zsindia.com/verify/${productId}`;
   const qrBuffer = await QRCode.toBuffer(verificationUrl);
 
   //Upload to S3

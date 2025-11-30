@@ -43,6 +43,7 @@ productRouter
   .put(
     protectedRoutes,
     allowedTo("admin"),
+    uploadMultipleFilesInMemory(arrFields),
     validate(updateProductValidation),
     product.updateProduct
   )
