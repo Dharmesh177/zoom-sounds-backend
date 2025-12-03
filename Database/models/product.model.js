@@ -38,6 +38,7 @@ const productSchema = new Schema(
       min: 1,
       max: 5,
     },
+    totalSerialNumbers: { type: Number },
     price: { type: Number, min: 0 },
     createdAt: { type: Date, default: Date.now },
   },

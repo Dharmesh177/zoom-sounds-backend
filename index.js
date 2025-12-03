@@ -7,6 +7,10 @@ import cors from 'cors'
 
 dotenv.config();
 const app = express();
+app.use('/api/v1/serial-numbers/verify', cors({
+  origin: '*',
+  methods: ['GET']
+}));
 app.use(cors())
 
 const port = 3000;
