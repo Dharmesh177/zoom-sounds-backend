@@ -38,6 +38,7 @@ const addProductValidation = Joi.object({
   tags: Joi.array().items(Joi.string()).allow(null),
   ratingAvg: Joi.number().min(1).max(5),
   price: Joi.number().min(0),
+  isTopSellingProduct: Joi.boolean(),
 });
 
 const getSpecificProductValidation = Joi.object({
@@ -88,6 +89,7 @@ const updateProductValidation = Joi.object({
 
   ratingAvg: Joi.number().min(1).max(5),
   price: Joi.number().min(0),
+  isTopSellingProduct: Joi.boolean(),
 });
 
 const deleteProductValidation = Joi.object({
