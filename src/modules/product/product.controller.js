@@ -236,6 +236,15 @@ const verifyProductQr = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const getTopSellingProduct = catchAsyncError(async (req, res, next) => {
+  const product = await productModel.find({ isTopSellingProduct: true });
+
+  console.log(`Fetched product: ${JSON.stringify(product)}`); // Log the fetched product
+  if (!product) return next(new AppError("Product not found", 404));
+  res.status(200).json({ status: "success", product });
+});
+
+
 const deleteProduct = deleteOne(productModel, "Product");
 
 export {
@@ -246,4 +255,5 @@ export {
   deleteProduct,
   generateOrFetchProductQr,
   verifyProductQr,
+  getTopSellingProduct,
 };

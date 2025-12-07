@@ -7,7 +7,7 @@ import {
   getSpecificProductValidation,
   updateProductValidation,
 } from "./product.validation.js";
-import { generateOrFetchProductQr, verifyProductQr } from "./product.controller.js";
+import { generateOrFetchProductQr, verifyProductQr, getTopSellingProduct } from "./product.controller.js";
 import { uploadMultipleFilesInMemory } from "../../middlewares/uploads.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 
@@ -30,6 +30,8 @@ productRouter
   .get(product.getAllProducts);
 
 productRouter.get("/verify/:productId", verifyProductQr);
+
+productRouter.get("/featuredproducts", getTopSellingProduct);
 
 productRouter.get(
   "/:productId/qrcode",
