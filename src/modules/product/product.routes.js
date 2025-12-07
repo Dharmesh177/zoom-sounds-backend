@@ -14,7 +14,7 @@ import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 const productRouter = express.Router();
 
 let arrFields = [
-  { name: "imgCover", maxCount: 1 },
+  { name: "thumbnail", maxCount: 1 },
   { name: "images", maxCount: 20 },
 ];
 

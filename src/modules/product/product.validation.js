@@ -99,6 +99,8 @@ const updateProductValidation = Joi.object({
     ).optional(),
 });
 
+
+
 const deleteProductValidation = Joi.object({
   id: Joi.string().hex().length(24).required(),
 });
