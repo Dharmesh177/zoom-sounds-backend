@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import QRCode from "qrcode";
 import { uploadToS3, checkS3FileExists } from "../../utils/s3.js";
 import slugify from "slugify";
@@ -6,21 +7,54 @@ import { AppError } from "../../utils/AppError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { productModel } from "./../../../Database/models/product.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
-import mongoose from "mongoose";
 
 const addProduct = catchAsyncError(async (req, res, next) => {
   const payload = { ...req.body };
-
+  console.log(payload);
   if (!payload.name) return next(new AppError("Name is required", 400));
   payload.slug = slugify(payload.name, { lower: true, strict: true });
 
-  if (req.files?.thumbnail?.[0]) payload.thumbnail = req.files.thumbnail[0].filename;
-  if (req.files?.images) payload.images = req.files.images.map(f => f.filename);
+  // Upload thumbnail to S3
+  if (req.files?.thumbnail?.[0]) {
+    const thumbFile = req.files.thumbnail[0];
+    const thumbUrl = await uploadToS3(
+      thumbFile.buffer,
+      `${payload.slug}-thumbnail.jpg`,
+      thumbFile.mimetype,
+      "Products"
+    );
+    payload.thumbnail = thumbUrl;
+  }
+
+  console.log(req.files)
+
+  // Upload images array to S3
+  if (req.files?.images) {
+    const uploadedImages = [];
+
+    for (const img of req.files.images) {
+      const imgUrl = await uploadToS3(
+        img.buffer,
+        `${payload.slug}-${img.originalname}`,
+        img.mimetype,
+        "Products"
+      );
+      uploadedImages.push(imgUrl);
+    }
+
+    payload.images = uploadedImages;
+  }
+  
+  console.log("final payload");
+  console.log(payload);
 
   const newProduct = await productModel.create(payload);
-  res.status(201).json({ status: "success", product: newProduct });
-});
 
+  res.status(201).json({
+    status: "success",
+    product: newProduct,
+  });
+});
 
 const getAllProducts = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(productModel.find(), req.query)
@@ -52,16 +86,78 @@ const getSpecificProduct = catchAsyncError(async (req, res, next) => {
 
 const updateProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  if (req.body.name) {
-    req.body.slug = slugify(req.body.name);
+
+  const existingProduct = await productModel.findById(id);
+  if (!existingProduct) return next(new AppError("Product was not found", 404));
+
+  const payload = { ...req.body };
+
+  // Update slug if name is changing
+  if (payload.name) {
+    payload.slug = slugify(payload.name, { lower: true, strict: true });
   }
-  const updateProduct = await productModel.findByIdAndUpdate(id, req.body, {
+
+  const slug = payload.slug || existingProduct.slug;
+
+  // --- THUMBNAIL UPLOAD (only if new) ---
+  if (req.files?.thumbnail?.[0]) {
+    const newThumb = req.files.thumbnail[0];
+
+    // Extract current filename from stored S3 URL
+    const currentThumbUrl = existingProduct.thumbnail || "";
+    const currentThumbName = currentThumbUrl.split("/").pop(); // e.g., slug-thumbnail.jpg
+
+    const newThumbName = `${slug}-thumbnail.jpg`;
+
+    if (currentThumbName !== newThumbName) {  // ← only upload if different
+      const thumbUrl = await uploadToS3(
+        newThumb.buffer,
+        newThumbName,
+        newThumb.mimetype,
+        "Products"
+      );
+      payload.thumbnail = thumbUrl;
+    } else {
+      payload.thumbnail = existingProduct.thumbnail; // keep old
+    }
+  }
+
+  // --- IMAGES UPLOAD (skip ones that already exist) ---
+  if (req.files?.images) {
+    const existingImages = existingProduct.images || [];
+    const existingImageNames = existingImages.map(url => url.split("/").pop()); // extract filenames
+
+    const uploadedImages = [];
+
+    for (const img of req.files.images) {
+      const newImageName = `${slug}-${img.originalname}`;
+
+      if (!existingImageNames.includes(newImageName)) { // ← upload only if NOT already present
+        const imgUrl = await uploadToS3(
+          img.buffer,
+          newImageName,
+          img.mimetype,
+          "Products"
+        );
+        uploadedImages.push(imgUrl);
+      }
+    }
+
+    // Merge old + new (without duplicates)
+    payload.images = [
+      ...existingImages,
+      ...uploadedImages
+    ].filter((v, i, a) => a.indexOf(v) === i);
+  }
+
+  const updatedProduct = await productModel.findByIdAndUpdate(id, payload, {
     new: true,
   });
 
-  updateProduct && res.status(201).json({ message: "success", updateProduct });
-
-  !updateProduct && next(new AppError("Product was not found", 404));
+  res.status(200).json({
+    status: "success",
+    product: updatedProduct,
+  });
 });
 
 
@@ -87,7 +183,7 @@ const generateOrFetchProductQr = catchAsyncError(async (req, res, next) => {
   }
 
   //If not exist → Generate new QR code
-  const verificationUrl = `https://zoomsounds.in/verify/${productId}`;
+  const verificationUrl = `https://zsindia.com/verify/${productId}`;
   const qrBuffer = await QRCode.toBuffer(verificationUrl);
 
   //Upload to S3
@@ -140,6 +236,15 @@ const verifyProductQr = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const getTopSellingProduct = catchAsyncError(async (req, res, next) => {
+  const product = await productModel.find({ isTopSellingProduct: true });
+
+  console.log(`Fetched product: ${JSON.stringify(product)}`); // Log the fetched product
+  if (!product) return next(new AppError("Product not found", 404));
+  res.status(200).json({ status: "success", product });
+});
+
+
 const deleteProduct = deleteOne(productModel, "Product");
 
 export {
@@ -150,4 +255,5 @@ export {
   deleteProduct,
   generateOrFetchProductQr,
   verifyProductQr,
+  getTopSellingProduct,
 };
