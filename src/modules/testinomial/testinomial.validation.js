@@ -4,6 +4,7 @@ const addTestimonialValidation = Joi.object({
   name: Joi.string().trim().required(),
   message: Joi.string().trim().required(),
   rating: Joi.number().min(1).max(5).required(),
+  approved: Joi.boolean().optional(), // only admin sets this
 });
 
 const updateTestimonialValidation = Joi.object({
