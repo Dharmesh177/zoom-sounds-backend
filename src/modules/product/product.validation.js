@@ -38,10 +38,10 @@ const addProductValidation = Joi.object({
   tags: Joi.array().items(Joi.string()).allow(null),
   ratingAvg: Joi.number().min(1).max(5),
   price: Joi.number().min(0),
- isTopSellingProduct: Joi.alternatives().try(
-    Joi.boolean(),
-    Joi.string().valid("true", "false")
-  ).optional(),
+  isTopSellingProduct: Joi.alternatives().try(
+      Joi.boolean(),
+      Joi.string().valid("true", "false")
+    ).optional(),
 });
 
 const getSpecificProductValidation = Joi.object({
