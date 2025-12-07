@@ -4,6 +4,12 @@ import { catchAsyncError } from "../utils/catchAsyncError.js";
 export const deleteOne = (model, name) => {
   return catchAsyncError(async (req, res, next) => {
     const { id } = req.params;
+
+    if (name == "Product") {
+      // Delete associated serial numbers
+      await SerialNumber.deleteMany({ productId: id });
+    }
+
     const document = await model.findByIdAndDelete(id, {
       new: true,
     });

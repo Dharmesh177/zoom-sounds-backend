@@ -4,25 +4,6 @@ import { deleteOne } from "../../handlers/factor.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { queryModel } from "./../../../Database/models/query.model.js";
 
-const buildResponse = ({ data, page, limit, totalDocuments }) => {
-  const totalPages = Math.ceil(totalDocuments / limit);
-
-  return {
-    success: true,
-    pagination: {
-      page,
-      limit,
-      totalDocuments,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-      nextPage: page < totalPages ? page + 1 : null,
-      prevPage: page > 1 ? page - 1 : null,
-    },
-    data,
-  };
-};
-
 const addReview = catchAsyncError(async (req, res, next) => {
   const newQuery = new queryModel(req.body);
   await newQuery.save();
@@ -34,27 +15,17 @@ const addReview = catchAsyncError(async (req, res, next) => {
 });
 
 const getAllReviews = catchAsyncError(async (req, res, next) => {
-  const api = new ApiFeatures(queryModel.find(), req.query)
+  let apiFeature = new ApiFeatures(queryModel.find(), req.query)
+    .fields()
     .filteration()
     .search()
-    .fields()
-    .sort()
-    .pagination();
-
-  const data = await api.mongooseQuery;
-
-  const totalDocuments = await queryModel.countDocuments(api.filters);
-
-  const response = buildResponse({
-    data,
-    page: api.page,
-    limit: api.limit,
-    totalDocuments,
-  });
-
-  res.status(200).json(response);
+    .sort();
+  const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
+  const getAllReviews = await apiFeature.mongooseQuery;
+  res
+    .status(200)
+    .json({ page: PAGE_NUMBER, message: "success", getAllReviews });
 });
-
 
 const getSpecificReview = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;

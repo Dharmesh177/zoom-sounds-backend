@@ -31,6 +31,7 @@ export const getApprovedTestimonials = catchAsyncError(async (req, res, next) =>
 // Admin: see all testimonials including pending
 export const getAllTestimonialsAdmin = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(Testimonial.find(), req.query)
+    .pagination()
     .sort()
     .fields();
 

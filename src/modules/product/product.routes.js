@@ -7,8 +7,8 @@ import {
   getSpecificProductValidation,
   updateProductValidation,
 } from "./product.validation.js";
-import { generateOrFetchProductQr, verifyProductQr } from "./product.controller.js";
-import { uploadMultipleFiles } from "../../../multer/multer.js";
+import { generateOrFetchProductQr, verifyProductQr, getTopSellingProduct } from "./product.controller.js";
+import { uploadMultipleFilesInMemory } from "../../middlewares/uploads.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 
 const productRouter = express.Router();
@@ -23,13 +23,15 @@ productRouter
   .post(
     protectedRoutes,
     allowedTo("admin", "user"),
-    uploadMultipleFiles(arrFields, "products"),
+    uploadMultipleFilesInMemory(arrFields),
     validate(addProductValidation),
     product.addProduct
   )
   .get(product.getAllProducts);
 
 productRouter.get("/verify/:productId", verifyProductQr);
+
+productRouter.get("/featuredproducts", getTopSellingProduct);
 
 productRouter.get(
   "/:productId/qrcode",
@@ -43,6 +45,7 @@ productRouter
   .put(
     protectedRoutes,
     allowedTo("admin"),
+    uploadMultipleFilesInMemory(arrFields),
     validate(updateProductValidation),
     product.updateProduct
   )
