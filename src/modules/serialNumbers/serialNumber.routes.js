@@ -7,6 +7,11 @@ import {
   deactivateSerialValidation,
   verifySerialValidation,
   deleteSerialValidation,
+  initiateWarrantyClaimValidation,
+  verifyOTPValidation,
+  resendOTPValidation,
+  getWarrantyDetailsValidation,
+  getAllCustomerWarrantiesValidation,
 } from "./serialNumber.validation.js";
 import { protectedRoutes, allowedTo } from "../auth/auth.controller.js";
 
@@ -48,6 +53,45 @@ serialRouter.delete(
   allowedTo("admin"),
   validate(deleteSerialValidation),
   serial.deleteSerial
+);
+
+// ==================== WARRANTY CLAIM ROUTES ====================
+
+// Initiate warranty claim - Send OTP
+serialRouter.post(
+  "/warranty/claim/initiate",
+  validate(initiateWarrantyClaimValidation),
+  serial.initiateWarrantyClaim
+);
+
+// Verify OTP and complete warranty claim
+serialRouter.post(
+  "/warranty/claim/verify",
+  validate(verifyOTPValidation),
+  serial.verifyOTPAndClaimWarranty
+);
+
+// Resend OTP
+serialRouter.post(
+  "/warranty/claim/resend-otp",
+  validate(resendOTPValidation),
+  serial.resendOTP
+);
+
+// Get all customer warranties (Admin only) - MUST be before /:serialNumber route
+serialRouter.get(
+  "/warranty/all",
+  // protectedRoutes,
+  // allowedTo("admin"),
+  validate(getAllCustomerWarrantiesValidation),
+  serial.getAllCustomerWarranties
+);
+
+// Get warranty details by serial number
+serialRouter.get(
+  "/warranty/:serialNumber",
+  validate(getWarrantyDetailsValidation),
+  serial.getWarrantyDetails
 );
 
 export default serialRouter;

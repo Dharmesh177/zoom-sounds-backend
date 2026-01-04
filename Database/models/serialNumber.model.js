@@ -25,6 +25,15 @@ const serialNumberSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  claimedWarranty: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  claimedAt: {
+    type: Date,
+    default: null
+  },
   status: {
     type: String,
     enum: ['active', 'deactivated'],
