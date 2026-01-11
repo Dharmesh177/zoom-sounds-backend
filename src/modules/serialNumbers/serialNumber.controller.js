@@ -418,7 +418,8 @@ export const getWarrantyDetails = catchAsyncError(async (req, res, next) => {
         startDate: warrantyData.warrantyStartDate,
         endDate: warrantyData.warrantyEndDate,
         daysRemaining,
-        isExpired
+        isExpired,
+        claimedAt: serial.claimedAt
       },
       product: warrantyData.productId,
       serialNumber: serial.serialNumber
