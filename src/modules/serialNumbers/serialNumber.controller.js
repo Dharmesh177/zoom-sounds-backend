@@ -5,12 +5,26 @@ import { productModel } from "../../../Database/models/product.model.js";
 import { SerialNumber } from "../../../Database/models/serialNumber.model.js";
 import { CustomerWarranty } from "../../../Database/models/customerWarranty.model.js";
 import admin from "firebase-admin";
-import serviceAccount from "../../../zsindia-firebase-configs.json" assert { type: "json" };
+import { generateUniqueSerialNumbers } from "../../utils/serialNumberGenerator.js";
 
+// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  try {
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      : null;
+
+    if (!serviceAccount) {
+      console.warn("Firebase Admin SDK not initialized: FIREBASE_SERVICE_ACCOUNT environment variable is missing");
+    } else {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log("Firebase Admin SDK initialized successfully");
+    }
+  } catch (error) {
+    console.error("Failed to initialize Firebase Admin SDK:", error.message);
+  }
 }
 
 export const generateSerialNumbers = catchAsyncError(async (req, res, next) => {
