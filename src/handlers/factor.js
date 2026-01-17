@@ -1,5 +1,6 @@
 import { AppError } from "../utils/AppError.js";
 import { catchAsyncError } from "../utils/catchAsyncError.js";
+import { SerialNumber } from "../../../Database/models/serialNumber.model.js";
 
 export const deleteOne = (model, name) => {
   return catchAsyncError(async (req, res, next) => {
