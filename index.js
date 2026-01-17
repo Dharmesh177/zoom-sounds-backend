@@ -9,11 +9,16 @@ dotenv.config();
 const app = express();
 
 // configure allowed origins via environment variable (comma separated)
-// e.g. ALLOWED_ORIGINS=https://zsindia.com,https://admin.zsindia.com
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com,https://admin.zsindia.com')
+// e.g. ALLOWED_ORIGINS=https://zsindia.com,https://admin.zsindia.com,http://localhost:3000
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS || 
+  'https://zsindia.com,https://admin.zsindia.com,https://www.zsindia.com,http://localhost:3000,http://localhost:3001'
+)
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
+
+console.log('🔧 CORS Allowed Origins:', allowedOrigins);
 
 /**
  * ❌ REMOVED
