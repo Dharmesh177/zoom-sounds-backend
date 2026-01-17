@@ -7,11 +7,30 @@ import cors from 'cors'
 
 dotenv.config();
 const app = express();
+// configure allowed origins via environment variable (comma separated)
+// e.g. ALLOWED_ORIGINS=https://zsindia.com,https://admin.zsindia.com
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com').split(',').map(s => s.trim()).filter(Boolean);
+
 app.use('/api/v1/serial-numbers/verify', cors({
   origin: '*',
   methods: ['GET']
 }));
-app.use(cors())
+
+// whitelist function for CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin like mobile apps or curl
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 const port = 5000;
 // app.post('/webhook', express.raw({type: 'application/json'}),createOnlineOrder );
