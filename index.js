@@ -3,26 +3,36 @@ import { dbConnection } from "./Database/dbConnection.js";
 import { bootstrap } from "./src/bootstrap.js";
 import dotenv from "dotenv";
 import morgan from "morgan";
-import cors from 'cors'
+import cors from "cors";
 
 dotenv.config();
 const app = express();
+
 // configure allowed origins via environment variable (comma separated)
 // e.g. ALLOWED_ORIGINS=https://zsindia.com,https://admin.zsindia.com
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com,https://admin.zsindia.com').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com,https://admin.zsindia.com')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
-app.use('/api/v1/serial-numbers/verify', cors({
-  origin: '*',
-  methods: ['GET']
-}));
+/**
+ * ❌ REMOVED
+ * This breaks CORS because credentials=true cannot be used with '*'
+ *
+ * app.use('/api/v1/serial-numbers/verify', cors({
+ *   origin: '*',
+ *   methods: ['GET']
+ * }));
+ */
 
-// whitelist function for CORS
+// 🔧 FIX: single global CORS config
 const corsOptions = {
   origin: function (origin, callback) {
     // allow requests with no origin like mobile apps or curl
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, origin); // 🔧 FIX: reflect exact origin
     } else {
       return callback(new Error('Not allowed by CORS'));
     }
@@ -33,9 +43,14 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'token', 'Cache-Control'],
 };
 
+// 🔧 FIX: apply CORS BEFORE routes
 app.use(cors(corsOptions));
 
+// 🔧 FIX: explicitly allow preflight requests
+app.options('*', cors(corsOptions));
+
 const port = 5000;
+
 // app.post('/webhook', express.raw({type: 'application/json'}),createOnlineOrder );
 // app.use(express.json());
 
@@ -44,8 +59,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(morgan("dev"));
 app.use(express.static("uploads"));
 
-
-
 bootstrap(app);
 dbConnection();
-app.listen(process.env.PORT || port, () => console.log(`Zoom sounds app listening on port ${port}!`));
+
+app.listen(process.env.PORT || port, () =>
+  console.log(`Zoom sounds app listening on port ${port}!`)
+);
