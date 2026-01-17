@@ -60,16 +60,27 @@ const getAllProducts = catchAsyncError(async (req, res, next) => {
   const PAGE_NUMBER = Number(req.query.page) || 1;
   const PAGE_SIZE = Number(req.query.limit) || 10; // Default to 10 items per page
 
+  // Build the API features (filters, search, sort)
   let apiFeature = new ApiFeatures(productModel.find(), req.query)
-    .fields()
     .filteration()
     .search()
     .sort()
-    .pagination(PAGE_NUMBER, PAGE_SIZE); // Apply pagination
-
+    .fields();
+  
+  console.log("API Feature Query Filter:", apiFeature.queryFilter);
+  
+  // Apply the combined filter to the query
+  apiFeature.mongooseQuery.find(apiFeature.queryFilter);
+  
+  // Count total with the same filter
   const totalProducts = await productModel.countDocuments(apiFeature.queryFilter);
+  
+  // Apply pagination AFTER counting
+  apiFeature.pagination(PAGE_NUMBER, PAGE_SIZE);
+  
   const products = await apiFeature.mongooseQuery.lean(); // lean for performance
-
+  console.log(`Fetched ${products.length} products out of ${totalProducts} total.`);
+  
   res.status(200).json({
     page: PAGE_NUMBER,
     limit: PAGE_SIZE,

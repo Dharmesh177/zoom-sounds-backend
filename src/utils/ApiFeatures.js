@@ -2,14 +2,15 @@ export class ApiFeatures {
   constructor(mongooseQuery, queryString) {
     this.mongooseQuery = mongooseQuery;
     this.queryString = queryString;
+    this.queryFilter = {};
   }
 
   //1-Pagination
-  pagination() {
-    const PAGE_LIMIT = 10;
-    let PAGE_NUMBER = this.queryString.page * 1 || 1;
-    if (this.queryString.page <= 0) PAGE_NUMBER = 1;
-    const PAGE_SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT; //2*3
+  pagination(page, limit) {
+    const PAGE_LIMIT = limit || 10;
+    let PAGE_NUMBER = page || 1;
+    if (PAGE_NUMBER <= 0) PAGE_NUMBER = 1;
+    const PAGE_SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT;
 
     this.mongooseQuery.skip(PAGE_SKIP).limit(PAGE_LIMIT);
     return this;
@@ -19,23 +20,23 @@ export class ApiFeatures {
 
   filteration() {
     let filterObj = { ...this.queryString };
-    // console.log(filterObj);
 
-    let excludedQuery = ["page", "sort", "fields", "keyword"];
+    let excludedQuery = ["page", "sort", "fields", "keyword", "limit"];
 
     excludedQuery.forEach((ele) => {
       delete filterObj[ele];
     });
     filterObj = JSON.stringify(filterObj);
-    // console.log(filterObj);
 
     filterObj = filterObj.replace(
       /\b(gt|gte|lt|lte)\b/g,
       (match) => `$${match}`
     );
     filterObj = JSON.parse(filterObj);
+    
+    // Store for counting
+    this.queryFilter = { ...this.queryFilter, ...filterObj };
 
-    this.mongooseQuery.find(filterObj);
     return this;
   }
   //3-Sort
@@ -52,14 +53,14 @@ export class ApiFeatures {
 
   search() {
     if (this.queryString.keyword) {
-      // console.log(this.queryString.keyword);
-
-      this.mongooseQuery.find({
+      const searchFilter = {
         $or: [
           { title: { $regex: this.queryString.keyword, $options: "i" } },
-          { descripton: { $regex: this.queryString.keyword, $options: "i" } },
+          { name: { $regex: this.queryString.keyword, $options: "i" } },
+          { description: { $regex: this.queryString.keyword, $options: "i" } },
         ],
-      });
+      };
+      this.queryFilter = { ...this.queryFilter, ...searchFilter };
     }
     return this;
   }
