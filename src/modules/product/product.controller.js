@@ -6,6 +6,7 @@ import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import { AppError } from "../../utils/AppError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { productModel } from "./../../../Database/models/product.model.js";
+import { SerialNumber } from "../../../Database/models/serialNumber.model.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 
 const addProduct = catchAsyncError(async (req, res, next) => {
