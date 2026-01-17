@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 // configure allowed origins via environment variable (comma separated)
 // e.g. ALLOWED_ORIGINS=https://zsindia.com,https://admin.zsindia.com
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://zsindia.com,https://admin.zsindia.com').split(',').map(s => s.trim()).filter(Boolean);
 
 app.use('/api/v1/serial-numbers/verify', cors({
   origin: '*',
@@ -27,7 +27,10 @@ const corsOptions = {
       return callback(new Error('Not allowed by CORS'));
     }
   },
+  credentials: true,
   optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'Cache-Control'],
 };
 
 app.use(cors(corsOptions));
