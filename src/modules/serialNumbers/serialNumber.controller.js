@@ -155,8 +155,8 @@ export const verifySerial = catchAsyncError(async (req, res, next) => {
       claimedWarranty: false,
       message: "Serial number verified successfully. Please claim your warranty.",
       warrantyExpireTime: {
-        totalDays: product.warranty || 0,
-        warrantyPeriod: `${product.warranty || 0} days from claim date`
+        totalDays: (product.warranty || 1) * 365,
+        warrantyPeriod: `${product.warranty || 1} year${product.warranty > 1 ? 's' : ''} from claim date`
       },
       product,
       serialData: serial,
@@ -306,11 +306,13 @@ export const verifyOTPAndClaimWarranty = catchAsyncError(async (req, res, next) 
   // Calculate warranty dates
   const warrantyStartDate = new Date();
   
-  // Ensure warranty is a valid number, default to 365 days if not
-  let warrantyDays = parseInt(product.warranty);
-  if (isNaN(warrantyDays) || warrantyDays <= 0) {
-    warrantyDays = 365; // Default 1 year
+  // Ensure warranty is a valid number, default to 1 year if not
+  // product.warranty is in YEARS, so convert to days (years * 365)
+  let warrantyYears = parseInt(product.warranty);
+  if (isNaN(warrantyYears) || warrantyYears <= 0) {
+    warrantyYears = 1; // Default 1 year
   }
+  const warrantyDays = warrantyYears * 365;
   
   const warrantyEndDate = new Date(warrantyStartDate);
   warrantyEndDate.setDate(warrantyEndDate.getDate() + warrantyDays);

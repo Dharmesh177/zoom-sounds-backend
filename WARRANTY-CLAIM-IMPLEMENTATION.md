@@ -274,7 +274,7 @@ This system allows customers to claim warranty for products by scanning QR codes
 
 **Headers:**
 ```
-Authorization: Bearer <admin_token>
+token: <admin_token>
 ```
 
 **Query Parameters (all optional):**
@@ -568,9 +568,9 @@ async function loadWarranties(page = 1, filters = {}) {
   });
   
   try {
-    const response = await fetch(`${BASE_URL}/api/serialNumbers/warranty-claims/all?${params}`, {
+    const response = await fetch(`${BASE_URL}/api/serial-numbers/warranty-claims/all?${params}`, {
       headers: {
-        'Authorization': `Bearer ${adminToken}`
+        'token': `${adminToken}`
       }
     });
     
