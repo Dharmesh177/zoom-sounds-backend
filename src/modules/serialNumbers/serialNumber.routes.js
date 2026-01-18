@@ -57,25 +57,11 @@ serialRouter.delete(
 
 // ==================== WARRANTY CLAIM ROUTES ====================
 
-// Initiate warranty claim - Send OTP
-serialRouter.post(
-  "/warranty/claim/initiate",
-  validate(initiateWarrantyClaimValidation),
-  serial.initiateWarrantyClaim
-);
-
 // Verify OTP and complete warranty claim
 serialRouter.post(
   "/warranty/claim/verify",
   validate(verifyOTPValidation),
   serial.verifyWarrantyClaim
-);
-
-// Resend OTP
-serialRouter.post(
-  "/warranty/claim/resend-otp",
-  validate(resendOTPValidation),
-  serial.resendOTP
 );
 
 // Get all customer warranties (Admin only) - MUST be before /:serialNumber route
