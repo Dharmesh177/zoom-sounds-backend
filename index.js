@@ -18,8 +18,6 @@ const allowedOrigins = (
   .map(s => s.trim())
   .filter(Boolean);
 
-console.log('🔧 CORS Allowed Origins:', allowedOrigins);
-
 /**
  * ❌ REMOVED
  * This breaks CORS because credentials=true cannot be used with '*'
