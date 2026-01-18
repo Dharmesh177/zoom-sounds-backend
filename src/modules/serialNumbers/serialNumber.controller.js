@@ -616,10 +616,12 @@ export const verifyWarrantyClaim = catchAsyncError(async (req, res, next) => {
 
     // Calculate warranty dates
     const warrantyStartDate = new Date();
-    let warrantyDays = parseInt(product.warranty);
-    if (isNaN(warrantyDays) || warrantyDays <= 0) {
-      warrantyDays = 365; // Default 1 year
+    // product.warranty is in YEARS, so convert to days (years * 365)
+    let warrantyYears = parseInt(product.warranty);
+    if (isNaN(warrantyYears) || warrantyYears <= 0) {
+      warrantyYears = 1; // Default 1 year
     }
+    const warrantyDays = warrantyYears * 365;
     const warrantyEndDate = new Date(warrantyStartDate);
     warrantyEndDate.setDate(warrantyEndDate.getDate() + warrantyDays);
 
