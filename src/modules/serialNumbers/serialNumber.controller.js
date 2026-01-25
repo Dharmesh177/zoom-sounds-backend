@@ -132,7 +132,8 @@ export const verifySerial = catchAsyncError(async (req, res, next) => {
       warrantyExpireTime: {
         daysRemaining,
         hoursRemaining,
-        totalDays: product.warranty || 0,
+        warrantyYears: parseInt(product.warranty) || 0,
+        totalWarrantyDays: (parseInt(product.warranty) || 0) * 365,
         startDate: warrantyData.warrantyStartDate,
         endDate: warrantyEndDate,
         isExpired
@@ -155,7 +156,8 @@ export const verifySerial = catchAsyncError(async (req, res, next) => {
       claimedWarranty: false,
       message: "Serial number verified successfully. Please claim your warranty.",
       warrantyExpireTime: {
-        totalDays: (product.warranty || 1) * 365,
+        warrantyYears: parseInt(product.warranty) || 1,
+        totalWarrantyDays: (parseInt(product.warranty) || 1) * 365,
         warrantyPeriod: `${product.warranty || 1} year${product.warranty > 1 ? 's' : ''} from claim date`
       },
       product,
