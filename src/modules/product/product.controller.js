@@ -16,33 +16,32 @@ const addProduct = catchAsyncError(async (req, res, next) => {
 
   // Upload thumbnail to S3
   if (req.files?.thumbnail?.[0]) {
-    const thumbFile = req.files.thumbnail[0];
-    const thumbUrl = await uploadToS3(
-      thumbFile.buffer,
-      `${payload.slug}-thumbnail.jpg`,
-      thumbFile.mimetype,
+    const file = req.files.thumbnail[0];
+    const ext = file.originalname.split('.').pop();
+    payload.thumbnail = await uploadToS3(
+      file.buffer,
+      `${payload.slug}-thumbnail.${ext}`,
+      file.mimetype,
       "Products"
     );
-    payload.thumbnail = thumbUrl;
   }
 
   console.log(req.files)
 
   // Upload images array to S3
   if (req.files?.images) {
-    const uploadedImages = [];
+    payload.images = [];
 
     for (const img of req.files.images) {
-      const imgUrl = await uploadToS3(
+      const ext = img.originalname.split('.').pop();
+      const key = await uploadToS3(
         img.buffer,
-        `${payload.slug}-${img.originalname}`,
+        `${payload.slug}-${Date.now()}.${ext}`,
         img.mimetype,
         "Products"
       );
-      uploadedImages.push(imgUrl);
+      payload.images.push(key);
     }
-
-    payload.images = uploadedImages;
   }
   
   console.log("final payload");
@@ -120,55 +119,36 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
   const slug = payload.slug || existingProduct.slug;
 
-  // --- THUMBNAIL UPLOAD (only if new) ---
+  // --- THUMBNAIL UPLOAD ---
   if (req.files?.thumbnail?.[0]) {
-    const newThumb = req.files.thumbnail[0];
-
-    // Extract current filename from stored S3 URL
-    const currentThumbUrl = existingProduct.thumbnail || "";
-    const currentThumbName = currentThumbUrl.split("/").pop(); // e.g., slug-thumbnail.jpg
-
-    const newThumbName = `${slug}-thumbnail.jpg`;
-
-    if (currentThumbName !== newThumbName) {  // ← only upload if different
-      const thumbUrl = await uploadToS3(
-        newThumb.buffer,
-        newThumbName,
-        newThumb.mimetype,
-        "Products"
-      );
-      payload.thumbnail = thumbUrl;
-    } else {
-      payload.thumbnail = existingProduct.thumbnail; // keep old
-    }
+    const file = req.files.thumbnail[0];
+    const ext = file.originalname.split('.').pop();
+    payload.thumbnail = await uploadToS3(
+      file.buffer,
+      `${slug}-thumbnail.${ext}`,
+      file.mimetype,
+      "Products"
+    );
   }
 
-  // --- IMAGES UPLOAD (skip ones that already exist) ---
+  // --- IMAGES UPLOAD ---
   if (req.files?.images) {
     const existingImages = existingProduct.images || [];
-    const existingImageNames = existingImages.map(url => url.split("/").pop()); // extract filenames
-
     const uploadedImages = [];
 
     for (const img of req.files.images) {
-      const newImageName = `${slug}-${img.originalname}`;
-
-      if (!existingImageNames.includes(newImageName)) { // ← upload only if NOT already present
-        const imgUrl = await uploadToS3(
-          img.buffer,
-          newImageName,
-          img.mimetype,
-          "Products"
-        );
-        uploadedImages.push(imgUrl);
-      }
+      const ext = img.originalname.split('.').pop();
+      const key = await uploadToS3(
+        img.buffer,
+        `${slug}-${Date.now()}.${ext}`,
+        img.mimetype,
+        "Products"
+      );
+      uploadedImages.push(key);
     }
 
-    // Merge old + new (without duplicates)
-    payload.images = [
-      ...existingImages,
-      ...uploadedImages
-    ].filter((v, i, a) => a.indexOf(v) === i);
+    // Merge old + new
+    payload.images = [...existingImages, ...uploadedImages];
   }
 
   const updatedProduct = await productModel.findByIdAndUpdate(id, payload, {
@@ -208,7 +188,7 @@ const generateOrFetchProductQr = catchAsyncError(async (req, res, next) => {
   const qrBuffer = await QRCode.toBuffer(verificationUrl);
 
   //Upload to S3
-  s3Url = await uploadToS3(qrBuffer, fileKey, "image/png");
+  s3Url = await uploadToS3(qrBuffer, `${productId}.png`, "image/png", "qrcodes");
 
   return res.status(201).json({
     success: true,
