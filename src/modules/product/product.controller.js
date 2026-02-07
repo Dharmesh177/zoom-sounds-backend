@@ -222,7 +222,7 @@ const verifyProductQr = catchAsyncError(async (req, res, next) => {
   res.status(200).json({
     verified: true,
     message: qrExists
-      ? "This is a genuine Zoom Sounds product ✅"
+      ? "This is a genuine ZS India product ✅"
       : "Product verified but QR not found in cloud (report if suspicious).",
     product: {
       id: product._id,

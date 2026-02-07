@@ -1,6 +1,6 @@
-# Zoom Sounds Backend
+# ZS India Backend
 
-Welcome to the Zoom Sounds Backend, an advanced server-side application that provides a robust foundation for building a comprehensive audio equipment e-commerce platform. This backend system is designed to facilitate seamless online shopping experiences for audio gear, from browsing professional sound equipment to checkout and order fulfillment.
+Welcome to the ZS India Backend, an advanced server-side application that provides a robust foundation for building a comprehensive audio equipment e-commerce platform. This backend system is designed to facilitate seamless online shopping experiences for audio gear, from browsing professional sound equipment to checkout and order fulfillment.
 
 ## Project Overview
 

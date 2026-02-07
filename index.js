@@ -66,5 +66,5 @@ bootstrap(app);
 dbConnection();
 
 app.listen(process.env.PORT || port, () =>
-  console.log(`Zoom sounds app listening on port ${port}!`)
+  console.log(`ZS India app listening on port ${port}!`)
 );

@@ -29,7 +29,7 @@ export {
 };
 
 // {
-//   "title": "Zoom Sounds",
+//   "title": "ZS India",
 //   "imgCover": "zoom-pro-cover.jpg",
 //   "images": ["zoom-pro-1.jpg"],
 //   "descripton": "Premium Bluetooth speaker with deep bass and 12-hour battery li\\\\\\\\dfbdgndfbsfbsfbsfbfdb",
@@ -38,7 +38,7 @@ export {
 //   "quantity": 50,
 //   "category": ["Speakers"],
 //   "subcategory": ["Bluetooth", "Portable"],
-//   "brand": ["Zoom Sounds"],
+//   "brand": ["ZS India"],
 //   "ratingAvg": 4.6
 // }
 
