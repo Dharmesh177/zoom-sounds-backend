@@ -106,6 +106,12 @@ const getSpecificProduct = catchAsyncError(async (req, res, next) => {
 
 const updateProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
+  
+  console.log('=== UPDATE PRODUCT START ===');
+  console.log('Product ID:', id);
+  console.log('req.body:', JSON.stringify(req.body, null, 2));
+  console.log('req.files keys:', req.files ? Object.keys(req.files) : 'no files');
+  console.log('req.files.thumbnail:', req.files?.thumbnail ? `${req.files.thumbnail.length} file(s)` : 'none');
 
   const existingProduct = await productModel.findById(id);
   if (!existingProduct) return next(new AppError("Product was not found", 404));
@@ -116,6 +122,8 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   delete payload.existingThumbnail;
   delete payload.existingImages;
   delete payload['existingImages[]'];
+  // Also remove thumbnail from body - we'll set it based on file upload or existingThumbnail
+  delete payload.thumbnail;
 
   // Update slug if name is changing
   if (payload.name) {
@@ -125,10 +133,18 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   const slug = payload.slug || existingProduct.slug;
 
   // --- THUMBNAIL HANDLING ---
-  if (req.files?.thumbnail?.[0]) {
+  const hasNewThumbnailFile = req.files?.thumbnail && req.files.thumbnail.length > 0;
+  const existingThumbnailValue = req.body.existingThumbnail;
+  
+  console.log('Thumbnail handling:');
+  console.log('  - hasNewThumbnailFile:', hasNewThumbnailFile);
+  console.log('  - existingThumbnailValue:', existingThumbnailValue);
+  console.log('  - existingProduct.thumbnail:', existingProduct.thumbnail);
+  
+  if (hasNewThumbnailFile) {
     // New thumbnail uploaded - delete old one from S3 if exists
     if (existingProduct.thumbnail) {
-      console.log('Deleting old thumbnail from S3:', existingProduct.thumbnail);
+      console.log('  -> Deleting old thumbnail from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
     }
     const file = req.files.thumbnail[0];
@@ -139,18 +155,23 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
       file.mimetype,
       "Products"
     );
+    console.log('  -> New thumbnail uploaded:', payload.thumbnail);
+  } else if (existingThumbnailValue && existingThumbnailValue !== '') {
+    // Keep existing thumbnail
+    payload.thumbnail = existingThumbnailValue;
+    console.log('  -> Keeping existing thumbnail:', payload.thumbnail);
   } else if ('existingThumbnail' in req.body) {
-    // Check if thumbnail was removed (empty string) or kept
-    const existingThumbnailValue = req.body.existingThumbnail;
-    if ((!existingThumbnailValue || existingThumbnailValue === '') && existingProduct.thumbnail) {
-      // Thumbnail removed - delete from S3
-      console.log('Thumbnail removed - deleting from S3:', existingProduct.thumbnail);
+    // existingThumbnail is present but empty - thumbnail was removed
+    if (existingProduct.thumbnail) {
+      console.log('  -> Thumbnail removed - deleting from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
-      payload.thumbnail = '';
-    } else if (existingThumbnailValue) {
-      // Keep existing thumbnail
-      payload.thumbnail = existingThumbnailValue;
     }
+    payload.thumbnail = '';
+    console.log('  -> Thumbnail set to empty');
+  } else {
+    // No thumbnail info sent - keep existing
+    payload.thumbnail = existingProduct.thumbnail;
+    console.log('  -> No thumbnail change, keeping:', payload.thumbnail);
   }
 
   // --- IMAGES HANDLING ---
@@ -189,6 +210,10 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
   // Set final images array: kept existing + newly uploaded
   payload.images = [...existingImagesFromFrontend, ...uploadedImages];
+
+  console.log('Final payload.thumbnail:', payload.thumbnail);
+  console.log('Final payload.images:', payload.images);
+  console.log('=== UPDATE PRODUCT END ===');
 
   const updatedProduct = await productModel.findByIdAndUpdate(id, payload, {
     new: true,
