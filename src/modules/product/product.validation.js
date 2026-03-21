@@ -59,6 +59,10 @@ const updateProductValidation = Joi.object({
 
   thumbnail: Joi.string().allow("", null),
   images: Joi.array().items(Joi.string()).allow(null),
+  
+  // For tracking existing images/thumbnail during updates
+  existingImages: Joi.array().items(Joi.string()).allow(null),
+  existingThumbnail: Joi.string().allow("", null),
 
   overview: Joi.string().trim().allow("", null),
 
