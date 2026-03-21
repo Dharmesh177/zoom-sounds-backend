@@ -111,6 +111,11 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   if (!existingProduct) return next(new AppError("Product was not found", 404));
 
   const payload = { ...req.body };
+  
+  // Remove tracking fields from payload (not part of product model)
+  delete payload.existingThumbnail;
+  delete payload.existingImages;
+  delete payload['existingImages[]'];
 
   // Update slug if name is changing
   if (payload.name) {
@@ -123,6 +128,7 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   if (req.files?.thumbnail?.[0]) {
     // New thumbnail uploaded - delete old one from S3 if exists
     if (existingProduct.thumbnail) {
+      console.log('Deleting old thumbnail from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
     }
     const file = req.files.thumbnail[0];
@@ -133,15 +139,17 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
       file.mimetype,
       "Products"
     );
-  } else if (req.body.existingThumbnail !== undefined) {
+  } else if ('existingThumbnail' in req.body) {
     // Check if thumbnail was removed (empty string) or kept
-    if (req.body.existingThumbnail === '' && existingProduct.thumbnail) {
-      // Thumbnail was removed - delete from S3
+    const existingThumbnailValue = req.body.existingThumbnail;
+    if ((!existingThumbnailValue || existingThumbnailValue === '') && existingProduct.thumbnail) {
+      // Thumbnail removed - delete from S3
+      console.log('Thumbnail removed - deleting from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
       payload.thumbnail = '';
-    } else {
+    } else if (existingThumbnailValue) {
       // Keep existing thumbnail
-      payload.thumbnail = req.body.existingThumbnail;
+      payload.thumbnail = existingThumbnailValue;
     }
   }
 
