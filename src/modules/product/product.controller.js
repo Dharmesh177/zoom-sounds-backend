@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import QRCode from "qrcode";
-import { uploadToS3, checkS3FileExists } from "../../utils/s3.js";
+import { uploadToS3, checkS3FileExists, deleteFromS3, deleteMultipleFromS3 } from "../../utils/s3.js";
 import slugify from "slugify";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import { AppError } from "../../utils/AppError.js";
@@ -119,8 +119,12 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
   const slug = payload.slug || existingProduct.slug;
 
-  // --- THUMBNAIL UPLOAD ---
+  // --- THUMBNAIL HANDLING ---
   if (req.files?.thumbnail?.[0]) {
+    // New thumbnail uploaded - delete old one from S3 if exists
+    if (existingProduct.thumbnail) {
+      await deleteFromS3(existingProduct.thumbnail);
+    }
     const file = req.files.thumbnail[0];
     const ext = file.originalname.split('.').pop();
     payload.thumbnail = await uploadToS3(
@@ -129,13 +133,40 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
       file.mimetype,
       "Products"
     );
+  } else if (req.body.existingThumbnail !== undefined) {
+    // Check if thumbnail was removed (empty string) or kept
+    if (req.body.existingThumbnail === '' && existingProduct.thumbnail) {
+      // Thumbnail was removed - delete from S3
+      await deleteFromS3(existingProduct.thumbnail);
+      payload.thumbnail = '';
+    } else {
+      // Keep existing thumbnail
+      payload.thumbnail = req.body.existingThumbnail;
+    }
   }
 
-  // --- IMAGES UPLOAD ---
-  if (req.files?.images) {
-    const existingImages = existingProduct.images || [];
-    const uploadedImages = [];
+  // --- IMAGES HANDLING ---
+  // Get existing images that should be kept (sent from frontend)
+  let existingImagesFromFrontend = req.body['existingImages[]'] || req.body.existingImages || [];
+  
+  // Ensure it's an array
+  if (typeof existingImagesFromFrontend === 'string') {
+    existingImagesFromFrontend = existingImagesFromFrontend ? [existingImagesFromFrontend] : [];
+  }
 
+  // Find images that were removed (exist in DB but not in frontend's list)
+  const currentImages = existingProduct.images || [];
+  const imagesToDelete = currentImages.filter(img => !existingImagesFromFrontend.includes(img));
+
+  // Delete removed images from S3
+  if (imagesToDelete.length > 0) {
+    await deleteMultipleFromS3(imagesToDelete);
+    console.log(`Deleted ${imagesToDelete.length} images from S3:`, imagesToDelete);
+  }
+
+  // Upload new images if any
+  const uploadedImages = [];
+  if (req.files?.images) {
     for (const img of req.files.images) {
       const ext = img.originalname.split('.').pop();
       const key = await uploadToS3(
@@ -146,10 +177,10 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
       );
       uploadedImages.push(key);
     }
-
-    // Merge old + new
-    payload.images = [...existingImages, ...uploadedImages];
   }
+
+  // Set final images array: kept existing + newly uploaded
+  payload.images = [...existingImagesFromFrontend, ...uploadedImages];
 
   const updatedProduct = await productModel.findByIdAndUpdate(id, payload, {
     new: true,

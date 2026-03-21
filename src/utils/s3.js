@@ -41,3 +41,36 @@ export const checkS3FileExists = async (key) => {
     throw error;
   }
 };
+
+export const deleteFromS3 = async (key) => {
+  try {
+    await s3
+      .deleteObject({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+      })
+      .promise();
+    return true;
+  } catch (error) {
+    console.error(`Failed to delete S3 object: ${key}`, error);
+    return false;
+  }
+};
+
+export const deleteMultipleFromS3 = async (keys) => {
+  if (!keys || keys.length === 0) return true;
+  
+  try {
+    const objects = keys.map(key => ({ Key: key }));
+    await s3
+      .deleteObjects({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Delete: { Objects: objects },
+      })
+      .promise();
+    return true;
+  } catch (error) {
+    console.error('Failed to delete S3 objects:', error);
+    return false;
+  }
+};
