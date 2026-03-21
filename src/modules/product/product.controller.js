@@ -135,43 +135,53 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   // --- THUMBNAIL HANDLING ---
   const hasNewThumbnailFile = req.files?.thumbnail && req.files.thumbnail.length > 0;
   const existingThumbnailValue = req.body.existingThumbnail;
-  
+
   console.log('Thumbnail handling:');
   console.log('  - hasNewThumbnailFile:', hasNewThumbnailFile);
   console.log('  - existingThumbnailValue:', existingThumbnailValue);
   console.log('  - existingProduct.thumbnail:', existingProduct.thumbnail);
-  
+
   if (hasNewThumbnailFile) {
-    // New thumbnail uploaded - delete old one from S3 if exists
+    // ✅ Case 1: Replace thumbnail
     if (existingProduct.thumbnail) {
       console.log('  -> Deleting old thumbnail from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
     }
+
     const file = req.files.thumbnail[0];
     const ext = file.originalname.split('.').pop();
+
     payload.thumbnail = await uploadToS3(
       file.buffer,
       `${slug}-thumbnail.${ext}`,
       file.mimetype,
       "Products"
     );
+
     console.log('  -> New thumbnail uploaded:', payload.thumbnail);
-  } else if (existingThumbnailValue && existingThumbnailValue !== '') {
-    // Keep existing thumbnail
-    payload.thumbnail = existingThumbnailValue;
-    console.log('  -> Keeping existing thumbnail:', payload.thumbnail);
-  } else if (existingThumbnailValue === '') {
-    // existingThumbnail was explicitly sent as empty string → thumbnail was removed by user
+
+  } else if (existingThumbnailValue === 'null') {
+    // ✅ Case 2: Remove thumbnail
     if (existingProduct.thumbnail) {
-      console.log('  -> Thumbnail removed - deleting from S3:', existingProduct.thumbnail);
+      console.log('  -> Removing thumbnail from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);
     }
-    payload.thumbnail = '';
-    console.log('  -> Thumbnail set to empty');
+
+    payload.thumbnail = null;
+
+    console.log('  -> Thumbnail removed');
+
+  } else if (existingThumbnailValue) {
+    // ✅ Case 3: Keep existing
+    payload.thumbnail = existingThumbnailValue;
+
+    console.log('  -> Keeping existing thumbnail:', payload.thumbnail);
+
   } else {
-    // No thumbnail info sent - keep existing
+    // ✅ Case 4: No change
     payload.thumbnail = existingProduct.thumbnail;
-    console.log('  -> No thumbnail change, keeping:', payload.thumbnail);
+
+    console.log('  -> No thumbnail change');
   }
 
   // --- IMAGES HANDLING ---
