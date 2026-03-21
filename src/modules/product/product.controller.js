@@ -117,14 +117,6 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   if (!existingProduct) return next(new AppError("Product was not found", 404));
 
   const payload = { ...req.body };
-  
-  // Remove tracking fields from payload (not part of product model)
-  delete payload.existingThumbnail;
-  delete payload.existingImages;
-  delete payload['existingImages[]'];
-  // Also remove thumbnail from body - we'll set it based on file upload or existingThumbnail
-  delete payload.thumbnail;
-
   // Update slug if name is changing
   if (payload.name) {
     payload.slug = slugify(payload.name, { lower: true, strict: true });
