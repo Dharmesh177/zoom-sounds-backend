@@ -160,8 +160,8 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
     // Keep existing thumbnail
     payload.thumbnail = existingThumbnailValue;
     console.log('  -> Keeping existing thumbnail:', payload.thumbnail);
-  } else if ('existingThumbnail' in req.body) {
-    // existingThumbnail is present but empty - thumbnail was removed
+  } else if (existingThumbnailValue === '') {
+    // existingThumbnail was explicitly sent as empty string → thumbnail was removed by user
     if (existingProduct.thumbnail) {
       console.log('  -> Thumbnail removed - deleting from S3:', existingProduct.thumbnail);
       await deleteFromS3(existingProduct.thumbnail);

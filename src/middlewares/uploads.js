@@ -1,4 +1,5 @@
 import multer from "multer";
+import { AppError } from "../utils/AppError.js";
 
 export const uploadMultipleFilesInMemory = (arrayOfFields) => {
   const storage = multer.memoryStorage();
