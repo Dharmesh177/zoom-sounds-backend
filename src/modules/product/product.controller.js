@@ -152,7 +152,7 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
     console.log('  -> New thumbnail uploaded:', payload.thumbnail);
 
-  } else if (existingThumbnailValue === 'null') {
+  } else if (existingThumbnailValue === '') {
     // ✅ Case 2: Remove thumbnail
     if (existingProduct.thumbnail) {
       console.log('  -> Removing thumbnail from S3:', existingProduct.thumbnail);
