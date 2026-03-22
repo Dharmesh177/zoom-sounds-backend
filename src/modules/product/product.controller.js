@@ -145,7 +145,7 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
     payload.thumbnail = await uploadToS3(
       file.buffer,
-      `${slug}-thumbnail.${ext}`,
+      `${slug}-${Date.now()}-thumbnail.${ext}`,
       file.mimetype,
       "Products"
     );
